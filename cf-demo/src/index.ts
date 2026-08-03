@@ -111,8 +111,15 @@ export default {
     }
 
     if (url.pathname.startsWith("/media/")) {
-      // R2 keys mirror the repo layout: media/<file>
-      const key = decodeURIComponent(url.pathname.slice(1));
+      // R2 keys mirror the repo layout: media/<file>. decodeURIComponent
+      // throws URIError on malformed escapes ("%"), which would surface as
+      // an unhandled 500 — answer 400 instead.
+      let key: string;
+      try {
+        key = decodeURIComponent(url.pathname.slice(1));
+      } catch {
+        return new Response("Bad Request", { status: 400 });
+      }
       if (key.includes("..")) return new Response("Bad Request", { status: 400 });
       return serveMedia(request, env, key);
     }

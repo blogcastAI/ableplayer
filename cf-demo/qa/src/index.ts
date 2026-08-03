@@ -60,22 +60,27 @@ async function runScreenshots(env: Env, id: string): Promise<Record<string, stri
   const results: Record<string, string> = {};
   try {
     for (const pageName of PAGES) {
-      const page = await browser.newPage();
+      // Per-page isolation: one bad page must not abort the rest of the lane.
       try {
-        for (const vp of VIEWPORTS) {
-          await page.setViewport({ width: vp.width, height: vp.height });
-          const resp = await page.goto(`${SITE}/demos/${pageName}.html`, {
-            waitUntil: "networkidle0",
-            timeout: 30_000,
-          });
-          const status = resp?.status() ?? 0;
-          const shot = (await page.screenshot({ fullPage: false })) as Uint8Array;
-          const key = `${id}/screenshots/${pageName}/${vp.name}.png`;
-          await put(env, key, shot, "image/png");
-          results[`${pageName}/${vp.name}`] = `status:${status} bytes:${shot.byteLength}`;
+        const page = await browser.newPage();
+        try {
+          for (const vp of VIEWPORTS) {
+            await page.setViewport({ width: vp.width, height: vp.height });
+            const resp = await page.goto(`${SITE}/demos/${pageName}.html`, {
+              waitUntil: "networkidle0",
+              timeout: 30_000,
+            });
+            const status = resp?.status() ?? 0;
+            const shot = (await page.screenshot({ fullPage: false })) as Uint8Array;
+            const key = `${id}/screenshots/${pageName}/${vp.name}.png`;
+            await put(env, key, shot, "image/png");
+            results[`${pageName}/${vp.name}`] = `status:${status} bytes:${shot.byteLength}`;
+          }
+        } finally {
+          await page.close();
         }
-      } finally {
-        await page.close();
+      } catch (err) {
+        results[`${pageName}/ERROR`] = String(err).slice(0, 200);
       }
     }
   } finally {
@@ -220,7 +225,17 @@ async function runVttQa(env: Env, id: string): Promise<Record<string, unknown>> 
       verdicts[key] = { error: "missing in R2" };
       continue;
     }
-    const vtt = (await obj.text()).slice(0, 12_000);
+    const full = await obj.text();
+    // Truncate on a cue boundary (blank line) so the model never sees a
+    // half-cut cue, and record that truncation happened so a "pass" on a
+    // large file is never mistaken for a full-file verdict.
+    let vtt = full;
+    let truncated = false;
+    if (full.length > 12_000) {
+      const cut = full.lastIndexOf("\n\n", 12_000);
+      vtt = full.slice(0, cut > 0 ? cut : 12_000);
+      truncated = true;
+    }
     const result = (await env.AI.run(VTT_MODEL, {
       messages: [
         {
@@ -237,7 +252,13 @@ async function runVttQa(env: Env, id: string): Promise<Record<string, unknown>> 
       ],
       max_tokens: 600,
     })) as { response?: string };
-    verdicts[key] = { model: VTT_MODEL, review: result.response ?? "" };
+    verdicts[key] = {
+      model: VTT_MODEL,
+      review: result.response ?? "",
+      truncated,
+      reviewedChars: vtt.length,
+      totalChars: full.length,
+    };
   }
   await put(env, `${id}/vtt-qa.json`, JSON.stringify(verdicts, null, 2), "application/json");
   return verdicts;
@@ -251,16 +272,36 @@ function authorized(request: Request, env: Env): boolean {
 
 async function fullRun(env: Env): Promise<string> {
   const id = runId();
-  const screenshots = await runScreenshots(env, id);
-  const smoke = await runSmoke(env, id);
-  const vtt = await runVttQa(env, id);
+  // Lane isolation: a transient failure in one lane must not prevent the
+  // other lanes from running or the summary from being written — a cron
+  // night with one flaky lane should still leave a discoverable verdict.
+  const errors: Record<string, string> = {};
+  let screenshots: Record<string, string> = {};
+  let smoke: SmokeCheck[] = [];
+  let vtt: Record<string, unknown> = {};
+  try {
+    screenshots = await runScreenshots(env, id);
+  } catch (err) {
+    errors.screenshots = String(err).slice(0, 300);
+  }
+  try {
+    smoke = await runSmoke(env, id);
+  } catch (err) {
+    errors.smoke = String(err).slice(0, 300);
+  }
+  try {
+    vtt = await runVttQa(env, id);
+  } catch (err) {
+    errors.vttQa = String(err).slice(0, 300);
+  }
   const summary = {
     runId: id,
     site: SITE,
     screenshots,
     smoke,
     vttQa: vtt,
-    smokeAllPass: smoke.every((c) => c.pass),
+    smokeAllPass: smoke.length > 0 && smoke.every((c) => c.pass),
+    laneErrors: Object.keys(errors).length ? errors : undefined,
   };
   await put(env, `${id}/summary.json`, JSON.stringify(summary, null, 2), "application/json");
   return id;
@@ -304,13 +345,22 @@ export default {
 
     if (url.pathname === "/evidence" || url.pathname === "/evidence/") {
       const list = await env.MEDIA.list({ prefix: "qa/", delimiter: "/" });
+      // R2 delimitedPrefixes include the "qa/" prefix; strip it so the
+      // returned run ids compose directly with /evidence/<runId>/...
+      const runs = list.delimitedPrefixes.map((p) => p.replace(/^qa\//, "").replace(/\/$/, ""));
       return Response.json({
-        runs: list.delimitedPrefixes,
-        note: "GET /evidence/<runPrefix>summary.json for a run's verdict",
+        runs,
+        note: "GET /evidence/<runId>/summary.json for a run's verdict",
       });
     }
     if (url.pathname.startsWith("/evidence/")) {
-      const key = `qa/${decodeURIComponent(url.pathname.slice("/evidence/".length))}`;
+      let decoded: string;
+      try {
+        decoded = decodeURIComponent(url.pathname.slice("/evidence/".length));
+      } catch {
+        return new Response("Bad Request", { status: 400 });
+      }
+      const key = `qa/${decoded}`;
       if (key.includes("..")) return new Response("Bad Request", { status: 400 });
       const obj = await env.MEDIA.get(key);
       if (!obj) return new Response("Not Found", { status: 404 });
