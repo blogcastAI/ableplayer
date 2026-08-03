@@ -1,0 +1,28 @@
+{
+  // Able Player QA Worker — automated evidence over the live demo site.
+  //
+  //  - Browser Rendering: 4-viewport screenshot battery + interaction smoke
+  //    tests (click-to-play, captions toggle, keyboard nav) against
+  //    https://ableplayer.perkslocker.com
+  //  - Workers AI: caption/transcript QA over the demo VTT corpus in R2
+  //  - Evidence (screenshots + JSON verdicts) stored under qa/ in the
+  //    ableplayer-demo-media bucket, browsable via GET /evidence/
+  //
+  // /run/* endpoints are gated by the QA_RUN_KEY secret (browser sessions
+  // and AI calls cost money; reports are public, runs are not).
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "ableplayer-qa",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-04-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "browser": { "binding": "BROWSER" },
+  "ai": { "binding": "AI" },
+  "r2_buckets": [
+    { "binding": "MEDIA", "bucket_name": "ableplayer-demo-media" }
+  ],
+  "triggers": {
+    // Nightly smoke + screenshots (off-minute by design)
+    "crons": ["43 9 * * *"]
+  },
+  "observability": { "enabled": true }
+}

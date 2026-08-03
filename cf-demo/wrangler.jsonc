@@ -1,0 +1,25 @@
+{
+  // Able Player live demo site — Cloudflare Worker.
+  // Serves the repo's demos/ + build/ as static assets; large media
+  // (video/audio/VTT) streams from R2 with Range support.
+  // Deployed from the blogcastAI/ableplayer fork (cf-demo/ directory).
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "ableplayer-demo",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-04-01",
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS"
+  },
+  "r2_buckets": [
+    {
+      "binding": "MEDIA",
+      "bucket_name": "ableplayer-demo-media"
+    }
+  ],
+  // Custom domain ableplayer.perkslocker.com is attached via the API
+  // (the CI token lacks zone scope; see cf-demo/README.md).
+  "observability": {
+    "enabled": true
+  }
+}
