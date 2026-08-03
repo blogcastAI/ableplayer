@@ -1,0 +1,11 @@
+{
+  "name": "ableplayer-cf-demo",
+  "private": true,
+  "description": "Cloudflare Worker serving the AblePlayer live demo (ableplayer.perkslocker.com). Workers Builds runs `npm run build` here (root directory: cf-demo), which builds the player at the repo root and stages demos/ + build/ into public/.",
+  "scripts": {
+    "build": "node stage.mjs"
+  },
+  "devDependencies": {
+    "wrangler": "^4.100.0"
+  }
+}
