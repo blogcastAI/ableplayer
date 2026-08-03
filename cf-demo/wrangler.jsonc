@@ -2,7 +2,8 @@
   // Able Player live demo site — Cloudflare Worker.
   // Serves the repo's demos/ + build/ as static assets; large media
   // (video/audio/VTT) streams from R2 with Range support.
-  // Deployed from the blogcastAI/ableplayer fork (cf-demo/ directory).
+  // Deployed from the blogcastAI/ableplayer fork (cf-demo/ directory)
+  // by Cloudflare Workers Builds: push to develop -> npm run build -> deploy.
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "ableplayer-demo",
   "main": "src/index.ts",
