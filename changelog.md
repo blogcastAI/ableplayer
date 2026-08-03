@@ -28,6 +28,7 @@
 - Modified preferences dialog generation so dialogs are only generated once per page and re-used, rather than generating four dialogs per player.
 
 ### Design
+- Transport control geometry is now themeable via custom properties, with defaults identical to the previous hard-coded values: `--able-control-button-size` (button box, default `max(1rem, var(--able-base-control-size))`), `--able-control-button-padding` (default 2px), `--able-play-button-padding` (default 4px), `--able-controls-gap` (default 3px), and `--able-controls-wrap` (default wrap).
 - Increase size and add hover state to seekbar.
 - Move bottom positioning of seekbar tooltip from JS into CSS.
 - Update drag-drop icon and change base background color of sign language container.
