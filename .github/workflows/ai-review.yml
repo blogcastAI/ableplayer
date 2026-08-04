@@ -1,0 +1,68 @@
+# AI code review for the blogcastAI/ableplayer fork.
+# Fork-local file: not intended for upstream PRs.
+#
+# Runs OpenAI Codex (codex exec) against the PR diff and posts one review
+# comment. Provider/model is controlled by repo variables so switching is a
+# one-variable flip when the Codex for OSS credits land:
+#   vars.AI_REVIEW_ENABLED   "true" to arm the workflow (default: off)
+#   vars.AI_REVIEW_MODEL     "" = Codex default (gpt-5.3-codex);
+#                            pre-award cost saver: "gpt-5.6-luna"
+# Secret required: OPENAI_API_KEY (from the funded org once awarded).
+name: AI review (Codex)
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  codex-review:
+    if: ${{ vars.AI_REVIEW_ENABLED == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Collect PR diff
+        run: |
+          git fetch origin "${{ github.event.pull_request.base.sha }}" --depth=1
+          git diff "${{ github.event.pull_request.base.sha }}" "${{ github.event.pull_request.head.sha }}" > /tmp/pr.diff
+          head -c 400000 /tmp/pr.diff > /tmp/pr-truncated.diff
+
+      - name: Build review prompt
+        run: |
+          {
+            echo "You are reviewing a pull request for Able Player, an accessibility-first"
+            echo "HTML5 media player (WCAG 2.2 / WAI-ARIA reference implementation)."
+            echo "Review the diff below. Report only genuine problems, ordered by severity:"
+            echo "correctness bugs, keyboard/focus/ARIA regressions, security issues,"
+            echo "and behavior changes the PR description does not intend."
+            echo "Skip style nits. If nothing is wrong, say so in one line."
+            echo ""
+            echo '--- DIFF ---'
+            cat /tmp/pr-truncated.diff
+          } > /tmp/prompt.txt
+
+      - name: Run Codex review
+        uses: openai/codex-action@v1
+        with:
+          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+          prompt-file: /tmp/prompt.txt
+          model: ${{ vars.AI_REVIEW_MODEL }}
+          output-file: /tmp/review.md
+          safety-strategy: read-only
+
+      - name: Post review comment
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          {
+            echo "## Codex review"
+            echo ""
+            cat /tmp/review.md
+          } > /tmp/comment.md
+          gh pr comment "${{ github.event.pull_request.number }}" --repo "${{ github.repository }}" --body-file /tmp/comment.md
