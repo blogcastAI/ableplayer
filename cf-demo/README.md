@@ -29,10 +29,17 @@ is nothing to run by hand.
 
 | Setting | Value |
 |---|---|
-| Branch | `develop` (production trigger); other branches build previews |
+| Branch | `develop` (trigger "Deploy default branch"); other branches build previews |
 | Root directory | `/cf-demo` |
-| Pipeline | `npm run build` → `stage.mjs` → `wrangler deploy` |
-| Watched paths | `cf-demo/*`, `demos/*`, `build/*`, `styles/*`, `scripts/*`, `translations/*` |
+| Build command | `npm run build` (runs `stage.mjs`) |
+| Deploy command | `npx wrangler deploy` |
+| Build caching | enabled |
+| Watched paths | `cf-demo/*`, `demos/*`, `build/*`, `styles/*`, `scripts/*`, `translations/*`, `package.json`, `package-lock.json`, `Gruntfile.cjs`, `rollup.config.js` |
+| Excluded paths | `cf-demo/qa/*`, `*.md` |
+
+**Documentation-only commits do not deploy** — `*.md` is excluded on purpose, so
+editing this file or any README never burns a build. Expect the banner to keep
+reporting the previous commit until a real code change lands.
 
 Confirm a deploy landed by reading the banner on any demo page — it prints the
 branch and commit actually serving. The `/ableplayer-deploy` skill has the
