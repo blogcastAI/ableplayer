@@ -273,7 +273,10 @@ class AblePlayer {
 		this.seekbarScope = (seekbarScope === 'chapter' || seekbarScope === 'chapters') ? 'chapter' : 'video';
 
 		// YouTube
-		let youTubeId = options.youTubeId ?? data.youTubeId;
+		// dataset keys are derived from the attribute name, so data-youtube-id is
+		// dataset.youtubeId -- one word, lowercase 'y', no capital T. The options
+		// keys keep the youTube* spelling used everywhere else in the API.
+		let youTubeId = options.youTubeId ?? data.youtubeId;
 		if (youTubeId !== undefined && youTubeId !== "") {
 			this.youTubeId = this.getYouTubeId(youTubeId);
 			if (!this.hasPoster) {
@@ -282,17 +285,17 @@ class AblePlayer {
 			}
 		}
 
-		let youTubeDescId = options.youTubeDescId ?? data.youTubeDescId;
+		let youTubeDescId = options.youTubeDescId ?? data.youtubeDescId;
 		if (youTubeDescId !== undefined && youTubeDescId !== "") {
 			this.youTubeDescId = this.getYouTubeId(youTubeDescId);
 		}
 
-		let youTubeSignId = options.youTubeSignId ?? data.youTubeSignId;
+		let youTubeSignId = options.youTubeSignId ?? data.youtubeSignSrc;
 		if (youTubeSignId !== undefined && youTubeSignId !== "") {
 			this.youTubeSignId = this.getYouTubeId(youTubeSignId);
 		}
 
-		let youTubeNoCookie = options.youTubeNoCookie ?? data.youTubeNoCookie;
+		let youTubeNoCookie = options.youTubeNoCookie ?? data.youtubeNocookie;
 		this.youTubeNoCookie = (youTubeNoCookie !== undefined && youTubeNoCookie) ? true : false;
 
 		// Vimeo
