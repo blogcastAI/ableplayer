@@ -1710,7 +1710,12 @@ function addControlFunctions(AblePlayer) {
 			}
 		}
 		// Change the transcript language if the transcript is not currently visible.
-		if ( ( ! this.$transcriptArea.is(':visible') && source === 'captions' ) || source === 'init' || source === 'transcript' ) {
+		// Test source before touching $transcriptArea. A player with no transcript
+		// never assigns it, and && evaluates left to right, so reading .is() first
+		// threw for every such player even when source was 'init' or 'transcript'
+		// and the visibility check was irrelevant. Same existence idiom as
+		// refreshControls() above.
+		if ( ( source === 'captions' && typeof this.$transcriptArea !== 'undefined' && ! this.$transcriptArea.is(':visible') ) || source === 'init' || source === 'transcript' ) {
 			console.log('syncTrackLanguages: transcript is not visible, so changing transcript language to ' + language);
 			this.transcriptCaptions = captions;
 			this.transcriptChapters = chapters;
