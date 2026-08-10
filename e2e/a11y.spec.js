@@ -17,10 +17,11 @@ import AxeBuilder from "@axe-core/playwright";
  *   those subtrees are excluded by policy (axe can reach into frames; we
  *   choose not to act on findings we cannot fix). The scan judges the player
  *   chrome and page shell we control.
- * - Note on the YouTube page: on develop its embed does not currently
- *   initialize (initSignLanguage throws when the media element has no
- *   <source> children), so today that entry scans the surrounding page shell
- *   rather than a live YouTube player.
+ * - The YouTube entry scans a live player. It previously scanned only a page
+ *   shell, because initSignLanguage threw whenever the media element had no
+ *   <source> children and aborted player construction; that defect and three
+ *   others in the same family are fixed on this branch, so the embed now
+ *   initializes and the scan judges real player chrome.
  */
 
 // Representative demo set: one page per major feature family.
