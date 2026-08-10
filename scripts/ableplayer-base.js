@@ -83,7 +83,13 @@ class AblePlayer {
 			this.okToPlay = false;
 		}
 
-		let data = media[0].dataset;
+		// Resolve through jQuery, as the length check above and the width reads
+		// below already do. `media` is documented as a jQuery object, an element,
+		// or a selector string; only the first indexes directly. For a selector
+		// string media[0] is its first character, whose .dataset is undefined, and
+		// for a bare element media[0] is undefined outright -- so every data-*
+		// attribute read below threw for two of the three supported argument forms.
+		let data = $(media)[0].dataset;
 
 		// loop (Boolean; if present always resolves to true, regardless of value)
 		this.loop = (data.loop !== undefined) ? true : false;
