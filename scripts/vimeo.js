@@ -266,7 +266,16 @@ function addVimeoFunctions(AblePlayer) {
 			// this is likely already a vimeo ID
 			return url;
 		} else {
-			urlObject = new URL(url);
+			// A bare ID read from data-vimeo-id arrives as a string, and an
+			// unguarded new URL('76979871') throws "Failed to construct 'URL':
+			// Invalid URL", aborting player setup for the documented markup.
+			// Anything that does not parse as a URL is an ID, same as the
+			// numeric branch above.
+			try {
+				urlObject = new URL(url);
+			} catch (e) {
+				return url;
+			}
 		}
 		if ( 'vimeo.com' === urlObject.hostname || 'player.vimeo.com' === urlObject.hostname ) {
 			// this is a full Vimeo URL

@@ -6,16 +6,27 @@ function addSignFunctions(AblePlayer) {
 	AblePlayer.prototype.initSignLanguage = function() {
 		this.hasSignLanguage = false;
 		// Sign language is only currently supported in HTML5 player and YouTube.
-		var hasLocalSrc = ( this.sources[0].getAttribute('data-sign-src') !== undefined && this.sources[0].getAttribute('data-sign-src') !== "" );
+		// Read the first source through a nullable local. A media element with no
+		// <source> children — every YouTube-only or Vimeo-only embed — leaves
+		// this.sources empty, so this.sources[0] is undefined and a direct
+		// .getAttribute() call throws, aborting recreatePlayer() before the player
+		// is ever built. Comparing against null also restores the behavior of
+		// $sources.first().attr(), which returned undefined for an absent
+		// attribute; getAttribute() returns null there, which is !== undefined and
+		// so read as "present" once the accessor changed.
+		var firstSource = this.sources[0] ?? null;
+		var localSignSrc = firstSource ? firstSource.getAttribute('data-sign-src') : null;
+		var remoteSignSrc = firstSource ? firstSource.getAttribute('data-youtube-sign-src') : null;
+		var hasLocalSrc = ( localSignSrc !== null && localSignSrc !== "" );
 		// YouTube src can either be on a `source` element or on the `video` element.
 		var hasRemoteSrc = ( this.$media.data('youtube-sign-src') !== undefined && this.$media.data('youtube-sign-src') !== "" );
-		var hasRemoteSource = ( this.sources[0].getAttribute('data-youtube-sign-src') !== undefined && this.sources[0].getAttribute('data-youtube-sign-src') !== '' );
+		var hasRemoteSource = ( remoteSignSrc !== null && remoteSignSrc !== '' );
 		if ( ! this.isIOS() && ( hasLocalSrc || hasRemoteSrc || hasRemoteSource ) && ( this.player === 'html5' || this.player === 'youtube' ) ) {
 			// check to see if there's a sign language video accompanying this video
 			// check only the first source
 			// If sign language is provided, it must be provided for all sources
-			let ytSignSrc = this.youTubeSignId ?? DOMPurify.sanitize( this.sources[0].getAttribute('data-youtube-sign-src') );
-			let signSrc = DOMPurify.sanitize( this.sources[0].getAttribute('data-sign-src') );
+			let ytSignSrc = this.youTubeSignId ?? DOMPurify.sanitize( remoteSignSrc );
+			let signSrc = DOMPurify.sanitize( localSignSrc );
 			let signVideo = DOMPurify.sanitize( this.$media.data('youtube-sign-src') );
 			this.signFile = (hasLocalSrc ) ? signSrc : false;
 			if ( hasRemoteSrc ) {
