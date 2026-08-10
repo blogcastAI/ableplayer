@@ -101,6 +101,7 @@
 	--able-tooltip-color: var(--able-medium-dark-gray);
 	--able-tooltip-background: var(--able-very-light-gray);
 	--able-alert-background: var(--able-light-yellow);
+	--able-alert-color: var(--able-black);
 	--able-menu-border: var(--able-dark-gray);
 	--able-menu-background: var(--able-black);
 	--able-menu-outline: var(--able-medium-gray);
@@ -1039,6 +1040,7 @@ div.able-wrapper.fullscreen {
 
 .able-alert {
 	background-color: var(--able-alert-background);
+	color: var(--able-alert-color);
 	z-index: 9400;
 	padding: 4px 8px;
 	position: absolute;

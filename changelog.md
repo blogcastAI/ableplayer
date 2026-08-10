@@ -13,6 +13,7 @@
 - Improvements to design and focus handling in Windows High Contrast Mode.
 - Changed controls from `div[role="button"]` to `button`.
 - Change labels on speaking rates to reflect actual values
+- Set an explicit text color on `.able-alert` via new `--able-alert-color` custom property; alert text no longer inherits the host page color (unreadable on dark-themed sites against the pale yellow alert background).
 
 ### Bug fixes
 
