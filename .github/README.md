@@ -57,6 +57,26 @@ contributions stay clean:
 
 Beyond those directories, the fork carries only changes that are already proposed upstream.
 
+## Playback fixes in this fork
+
+A build of upstream `develop` cannot currently play a YouTube video, and throws on 17 of
+its own 60 demo pages. We found and fixed four unreleased regressions; after them, 0 of 60
+throw. Each lives on a branch cut from `upstream/develop` so it can be contributed back
+unchanged.
+
+| Defect | Origin |
+|---|---|
+| `initSignLanguage` / `initDescription` read `sources[0]` unguarded, so any media element with no `<source>` children — every YouTube-only embed — threw and aborted player construction. The same change also made a missing attribute read as *present*, because `getAttribute()` returns `null` where `.attr()` returned `undefined`. | `834d003` |
+| Every `data-youtube-*` attribute was ignored: reads asked `dataset.youTubeId`, but the real key for `data-youtube-id` is `youtubeId`. The player silently fell back to `html5` with no source. | `2d4a1c2` |
+| A selector string or bare element passed to the constructor — both documented — threw on `.dataset`, because the argument was indexed directly instead of through jQuery. | `2d4a1c2` |
+| `syncTrackLanguages` dereferenced `$transcriptArea` before testing `source`, so any player without a transcript threw during `initDefaultCaption`. | `05e9a22` |
+
+Plus a guard on `getVimeoId()`, where a bare ID string — the documented `data-vimeo-id`
+form — reached `new URL()` and threw.
+
+These fixes are why [perks.locker](https://perkslocker.com) ships this fork rather than the
+released version.
+
 ## Contributions to upstream
 
 Open pull requests on `ableplayer/ableplayer`:
