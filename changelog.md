@@ -17,6 +17,7 @@
 
 ### Bug fixes
 
+- Theme custom properties (`--able-*`) are now declared on `:root` instead of on the component containers (`.able-wrapper`, `.able-modal-dialog`, etc.). Declaring them on the containers shadowed any value an integrator set on an ancestor element, silently defeating ancestor-level theming; values set on `body` or a page section now inherit into the player as expected. Default values are unchanged, and per-player overrides on the containers themselves still win.
 - Add the seek interval value to rewind and forward buttons, to provide better user information.
 - Add the expected new speed value to playback speed controls.
 - Move seekbar tooltip closer to seekbar. It had moved further away when the seekhead size was increased.
