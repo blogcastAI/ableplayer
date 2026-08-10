@@ -60,6 +60,11 @@
 .able-transcript-area,
 .able-wrapper {
 	--able-base-control-size: 24px;
+	/* Computed size of transport buttons: replicates the previous
+	   width: 1rem clamped by min-width: var(--able-base-control-size).
+	   Integrators can set a fixed size (e.g. 36px) for uniform controls. */
+	--able-control-button-size: max(1rem, var(--able-base-control-size));
+	--able-controls-gap: 3px;
 	--able-color: var(--able-white);
 	--able-control-background: var(--able-black);
 	--able-control-color: var(--able-white);
@@ -332,9 +337,9 @@ video[data-able-player],
 .able-left-controls, .able-right-controls {
 	overflow: visible;
 	display: flex;
-	gap: 3px;
+	gap: var(--able-controls-gap);
 	align-items: center;
-	flex-wrap: wrap;
+	flex-wrap: var(--able-controls-wrap, wrap);
 }
 
 .able-skin-legacy .able-left-controls,
@@ -368,11 +373,11 @@ video[data-able-player],
 	all: unset;
 	background: none;
 	position: relative;
-	padding: 2px;
+	padding: var(--able-control-button-padding, 2px);
 	min-width: var(--able-base-control-size);
 	min-height: var(--able-base-control-size);
-	width: 1rem;
-	height: 1rem;
+	width: var(--able-control-button-size);
+	height: var(--able-control-button-size);
 	border: none;
 	overflow: visible !important;
 	display: flex;
@@ -385,7 +390,7 @@ video[data-able-player],
 
 .able-controller div.able-button-handler-play button {
 	/* The icon appears too large if this button doesn't have padding. */
-	padding: 4px;
+	padding: var(--able-play-button-padding, 4px);
 }
 
 .able-controller .buttonOff svg {
