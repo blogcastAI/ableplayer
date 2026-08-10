@@ -8,8 +8,12 @@ https://ableplayer-demo.blogcast.workers.dev)
 
 ## Architecture
 
-- `demos/` + `build/` are copied into `public/` at deploy time and served as
-  Worker static assets (free, cached at edge).
+- `stage.mjs` builds the player, copies `demos/` + `build/` into `public/`,
+  drops the test bundles, and injects the provenance banner into every demo
+  page. The staged files are served as Worker static assets (cached at edge).
+  `public/` is generated and gitignored — never commit it.
+- The banner states the version, branch, and commit each page was built from,
+  so the demo is never mistaken for an official Able Player release.
 - `media/` (164 MB of video/audio/captions — some files exceed the 25 MiB
   static-asset limit) lives in the `ableplayer-demo-media` R2 bucket and is
   streamed by the Worker with single-range HTTP Range support, so seeking
@@ -17,15 +21,29 @@ https://ableplayer-demo.blogcast.workers.dev)
 - Demo pages reference `../build/...` and `../media/...`, which resolve to
   `/build/*` and `/media/*` — the repo's demo HTML runs unmodified.
 
-## Deploy
+## Deploy — automatic
+
+Cloudflare Workers Builds is connected to `blogcastAI/ableplayer`. **A push to
+`develop` that touches a watched path builds and deploys on its own** — there
+is nothing to run by hand.
+
+| Setting | Value |
+|---|---|
+| Branch | `develop` (production trigger); other branches build previews |
+| Root directory | `/cf-demo` |
+| Pipeline | `npm run build` → `stage.mjs` → `wrangler deploy` |
+| Watched paths | `cf-demo/*`, `demos/*`, `build/*`, `styles/*`, `scripts/*`, `translations/*` |
+
+Confirm a deploy landed by reading the banner on any demo page — it prints the
+branch and commit actually serving. The `/ableplayer-deploy` skill has the
+build-status commands and the trigger UUIDs.
+
+### Manual fallback
+
+Only needed if Workers Builds is unavailable:
 
 ```bash
-npm run build                    # from repo root: refresh build/
-rm -rf cf-demo/public && mkdir -p cf-demo/public
-cp -r demos cf-demo/public/demos
-cp -r build cf-demo/public/build
-rm -rf cf-demo/public/build/test # test bundles not needed publicly
-cd cf-demo && npx wrangler deploy
+cd cf-demo && npm run build && npx wrangler deploy
 ```
 
 Media re-upload (only when media/ changes):
