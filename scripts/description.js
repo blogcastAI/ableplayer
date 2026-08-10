@@ -35,8 +35,16 @@ function addDescriptionFunctions(AblePlayer) {
 		// check to see if there's an open-described version of this video
 		// checks only the first source since if a described version is provided,
 		// it must be provided for all sources
-		this.descFile = this.sources[0].getAttribute('data-desc-src');
-		if (typeof this.descFile !== 'undefined') {
+		// Read through a nullable local: a media element with no <source> children
+		// — every YouTube-only or Vimeo-only embed — leaves this.sources empty, so
+		// this.sources[0] is undefined and .getAttribute() throws. Test the value
+		// rather than its typeof, because getAttribute() returns null for an absent
+		// attribute and typeof null === 'object', which read as "a described
+		// version exists" for every undescribed video once the accessor changed
+		// from $sources.first().attr() (which returned undefined).
+		var firstSource = this.sources[0] ?? null;
+		this.descFile = firstSource ? firstSource.getAttribute('data-desc-src') : null;
+		if (this.descFile !== null && this.descFile !== '') {
 			this.hasOpenDesc = true;
 		} else {
 			// there's no open-described version via data-desc-src,
@@ -121,7 +129,15 @@ function addDescriptionFunctions(AblePlayer) {
 		} else if (this.player === 'vimeo') {
 			return (this.activeVimeoId === this.vimeoDescId);
 		} else {
-			return (this.sources[0].getAttribute('data-desc-src') === this.sources[0].getAttribute('src'));
+			// Nullable read for the same reason as initDescription(): an HTML5
+			// media element may carry its src on the element itself and have no
+			// <source> children. Requiring descSrc to be non-null also stops a
+			// source that has neither attribute from comparing null === null and
+			// reporting that the described version is playing.
+			const firstSource = this.sources[0] ?? null;
+			const descSrc = firstSource ? firstSource.getAttribute('data-desc-src') : null;
+			const activeSrc = firstSource ? firstSource.getAttribute('src') : null;
+			return ( descSrc !== null && descSrc === activeSrc );
 		}
 	};
 
