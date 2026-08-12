@@ -124,3 +124,47 @@ jobs:
           name: a11y-playwright-report
           path: playwright-report/
           retention-days: 14
+
+  # Second, independent axe lens via the published blogcastAI/a11y-gate-action.
+  # Deliberately IN ADDITION to the a11y job above, never a replacement: the
+  # action is axe-only, while the inline suite also carries the keyboard
+  # operability specs — swapping would silently drop keyboard coverage. This
+  # job dogfoods the action against the same demo set the inline suite scans.
+  a11y-action:
+    name: a11y-gate-action (axe, 320px-4K)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+        env:
+          PUPPETEER_SKIP_DOWNLOAD: "1"
+      # Fresh build for the same reason as the a11y job: the demos load
+      # ../build/*, and scanning a stale committed bundle proves nothing.
+      - run: npm run build
+      - name: axe gate via published action
+        uses: blogcastAI/a11y-gate-action@v0.1.1
+        with:
+          # Serve the repo root so the demos' relative ../build and ../media
+          # references resolve, mirroring e2e/serve.mjs.
+          serve-dir: "."
+          # The representative demo set from e2e/a11y.spec.js, one page per
+          # major feature family.
+          pages: >-
+            /demos/index.html
+            /demos/video1.html
+            /demos/video5.html
+            /demos/audio1.html
+            /demos/audio3.html
+            /demos/desc1.html
+            /demos/youtube1.html
+          # Match the inline suite's severity: it asserts the violation list
+          # is EMPTY at every impact, so the action must fail on minor too.
+          fail-on: minor
+          # Same policy exclusion as e2e/a11y.spec.js: violations inside the
+          # YouTube/Vimeo provider document are theirs, not ours.
+          exclude: "iframe"
