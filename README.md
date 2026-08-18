@@ -17,6 +17,11 @@
 - [User Preferences](#user-preferences)
 - [Acknowledgements](#acknowledgements)
 
+> **Fork note.** This is the blogcastAI fork of Able Player. A build of this
+> fork ships in production on perkslocker.com, so markup, class names, CSS
+> custom properties, and dist output carry a downstream contract. Read
+> [DOWNSTREAM-PERKS.md](DOWNSTREAM-PERKS.md) before changing any of them.
+
 ## Feature List
 
 - Supports both audio and video.
